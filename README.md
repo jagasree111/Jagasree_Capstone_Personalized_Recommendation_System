@@ -119,4 +119,7 @@ A web application that recommends personalized resources, discussions, and oppor
 
 B.Tech Artificial Intelligence & Machine Learning
 
-AMET University
+### Day 14
+- Documentation and deployment
+
+- ##project completed
