@@ -49,3 +49,5 @@ This project aims to recommend relevant resources, opportunities, and discussion
 
 ### Day 14
 - Documentation and deployment
+
+- ##project completed
