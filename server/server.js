@@ -35,6 +35,21 @@ app.post("/users", async (req, res) => {
   }
 });
 
+// Get user by ID
+app.get("/users/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get all recommendations
 app.get("/recommendations", async (req, res) => {
   try {
@@ -50,6 +65,21 @@ app.post("/recommendations", async (req, res) => {
   try {
     const recommendation = await Recommendation.create(req.body);
     res.status(201).json(recommendation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get recommendation by ID
+app.get("/recommendations/:id", async (req, res) => {
+  try {
+    const recommendation = await Recommendation.findById(req.params.id);
+
+    if (!recommendation) {
+      return res.status(404).json({ message: "Recommendation not found" });
+    }
+
+    res.status(200).json(recommendation);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
