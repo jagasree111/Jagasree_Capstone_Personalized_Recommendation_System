@@ -25,16 +25,6 @@ app.get("/users", async (req, res) => {
   }
 });
 
-// Create a user
-app.post("/users", async (req, res) => {
-  try {
-    const user = await User.create(req.body);
-    res.status(201).json(user);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Get user by ID
 app.get("/users/:id", async (req, res) => {
   try {
@@ -47,6 +37,35 @@ app.get("/users/:id", async (req, res) => {
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Create a user
+app.post("/users", async (req, res) => {
+  try {
+    const { name, email, interests } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({
+        message: "Name and email are required"
+      });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      interests
+    });
+
+    res.status(201).json({
+      message: "User created successfully",
+      user
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: "Failed to create user",
+      error: error.message
+    });
   }
 });
 
@@ -64,9 +83,16 @@ app.get("/recommendations", async (req, res) => {
 app.post("/recommendations", async (req, res) => {
   try {
     const recommendation = await Recommendation.create(req.body);
-    res.status(201).json(recommendation);
+
+    res.status(201).json({
+      message: "Recommendation created successfully",
+      recommendation
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(400).json({
+      message: "Failed to create recommendation",
+      error: error.message
+    });
   }
 });
 
