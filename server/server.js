@@ -20,7 +20,7 @@ mongoose
 // Get all users
 app.get("/users", async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find().populate("recommendations");
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -30,7 +30,8 @@ app.get("/users", async (req, res) => {
 // Get user by ID
 app.get("/users/:id", async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id)
+  .populate("recommendations");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -74,7 +75,7 @@ app.post("/users", async (req, res) => {
 // Update a user
 app.put("/users/:id", async (req, res) => {
   try {
-    const { name, email, interests } = req.body;
+    const { name, email, interests, recommendations } = req.body;
 
     if (!name || !email) {
       return res.status(400).json({
@@ -85,9 +86,10 @@ app.put("/users/:id", async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.params.id,
       {
-        name,
-        email,
-        interests
+       name,
+       email,
+       interests,
+       recommendations
       },
       {
         new: true,
@@ -116,7 +118,8 @@ app.put("/users/:id", async (req, res) => {
 // Get all recommendations
 app.get("/recommendations", async (req, res) => {
   try {
-    const recommendations = await Recommendation.find();
+    const recommendations = await Recommendation.find()
+  .populate("user");
     res.json(recommendations);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -143,7 +146,8 @@ app.post("/recommendations", async (req, res) => {
 // Get recommendation by ID
 app.get("/recommendations/:id", async (req, res) => {
   try {
-    const recommendation = await Recommendation.findById(req.params.id);
+    const recommendation = await Recommendation.findById(req.params.id)
+  .populate("user");
 
     if (!recommendation) {
       return res.status(404).json({
