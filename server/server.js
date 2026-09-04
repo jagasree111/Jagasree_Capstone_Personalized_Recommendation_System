@@ -1,13 +1,15 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 require("dotenv").config();
-
-const User = require("./models/User");
-const Recommendation = require("./models/Recommendation");
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
+
+const User = require("./models/User");
+const Recommendation = require("./models/Recommendation");
 
 // MongoDB connection
 mongoose
@@ -144,12 +146,67 @@ app.get("/recommendations/:id", async (req, res) => {
     const recommendation = await Recommendation.findById(req.params.id);
 
     if (!recommendation) {
-      return res.status(404).json({ message: "Recommendation not found" });
+      return res.status(404).json({
+        message: "Recommendation not found"
+      });
     }
 
     res.status(200).json(recommendation);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/recommendations/:id", async (req, res) => {
+  try {
+    const recommendation = await Recommendation.findByIdAndDelete(
+      req.params.id
+    );
+
+    if (!recommendation) {
+      return res.status(404).json({
+        message: "Recommendation not found"
+      });
+    }
+
+    res.status(200).json({
+      message: "Recommendation deleted successfully"
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: "Failed to delete recommendation",
+      error: error.message
+    });
+  }
+});
+
+// Update a recommendation
+app.put("/recommendations/:id", async (req, res) => {
+  try {
+    const recommendation = await Recommendation.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    if (!recommendation) {
+      return res.status(404).json({
+        message: "Recommendation not found"
+      });
+    }
+
+    res.status(200).json({
+      message: "Recommendation updated successfully",
+      recommendation
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: "Failed to update recommendation",
+      error: error.message
+    });
   }
 });
 
