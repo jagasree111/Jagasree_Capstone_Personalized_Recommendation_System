@@ -4,6 +4,9 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+
+const authenticateToken = require("./Middleware/authMiddleware");
+
 const app = express();
 
 app.use(cors());
@@ -220,7 +223,7 @@ app.put("/users/:id", async (req, res) => {
 });
 
 // Get all recommendations
-app.get("/recommendations", async (req, res) => {
+app.get("/recommendations", authenticateToken, async (req, res) => {
   try {
     const recommendations = await Recommendation.find()
   .populate("user");
@@ -231,7 +234,7 @@ app.get("/recommendations", async (req, res) => {
 });
 
 // Create a recommendation
-app.post("/recommendations", async (req, res) => {
+app.post("/recommendations", authenticateToken, async (req, res) => {
   try {
     const recommendation = await Recommendation.create(req.body);
 
@@ -248,7 +251,7 @@ app.post("/recommendations", async (req, res) => {
 });
 
 // Get recommendation by ID
-app.get("/recommendations/:id", async (req, res) => {
+app.get("/recommendations/:id", authenticateToken, async (req, res) => {
   try {
     const recommendation = await Recommendation.findById(req.params.id)
   .populate("user");
@@ -265,7 +268,7 @@ app.get("/recommendations/:id", async (req, res) => {
   }
 });
 
-app.delete("/recommendations/:id", async (req, res) => {
+app.delete("/recommendations/:id", authenticateToken, async (req, res) => {
   try {
     const recommendation = await Recommendation.findByIdAndDelete(
       req.params.id
@@ -289,7 +292,7 @@ app.delete("/recommendations/:id", async (req, res) => {
 });
 
 // Update a recommendation
-app.put("/recommendations/:id", async (req, res) => {
+app.put("/recommendations/:id", authenticateToken, async (req, res) => {
   try {
     const recommendation = await Recommendation.findByIdAndUpdate(
       req.params.id,
