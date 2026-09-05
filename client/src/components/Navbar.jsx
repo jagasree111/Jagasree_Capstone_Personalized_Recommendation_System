@@ -1,10 +1,14 @@
-function Navbar() {
+function Navbar({ setPage }) {
   return (
     <nav>
       <h2>Personalized Recommendation System</h2>
+
       <div>
-        <a href="/">Home</a>
-        <a href="/recommendations">Recommendations</a>
+        <button onClick={() => setPage("home")}>Home</button>
+
+        <button onClick={() => setPage("login")}>Login</button>
+
+        <button onClick={() => setPage("register")}>Register</button>
       </div>
     </nav>
   );
