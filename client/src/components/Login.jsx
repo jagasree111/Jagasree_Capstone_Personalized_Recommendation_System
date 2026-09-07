@@ -31,7 +31,7 @@ function Login() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       setMessage("Login successful!");
-    } catch (error) {
+    } catch {
       setMessage("Login failed. Please try again.");
     }
   };

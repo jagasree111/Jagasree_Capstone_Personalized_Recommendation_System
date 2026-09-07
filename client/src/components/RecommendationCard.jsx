@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_URL } from "../App";
 
 function RecommendationCard({ recommendation, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -13,11 +14,12 @@ function RecommendationCard({ recommendation, onUpdate }) {
   const handleUpdate = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/recommendations/${recommendation._id}`,
+        `${API_URL}/recommendations/${recommendation._id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
             title,
@@ -58,9 +60,12 @@ function RecommendationCard({ recommendation, onUpdate }) {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/recommendations/${recommendation._id}`,
+        `${API_URL}/recommendations/${recommendation._id}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
       );
 
