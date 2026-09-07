@@ -1,0 +1,24 @@
+meta {
+  name: Create recommendation
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/recommendations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "title": "Introduction to Machine Learning",
+    "description": "A beginner-friendly learning resource",
+    "category": "course",
+    "user": "{{userId}}"
+  }
+}

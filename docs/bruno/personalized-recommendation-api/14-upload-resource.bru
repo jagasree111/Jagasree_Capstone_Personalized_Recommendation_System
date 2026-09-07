@@ -1,0 +1,21 @@
+meta {
+  name: Upload resource
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/uploads
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:multipart-form {
+  title: Bruno API documentation sample
+  description: Resource uploaded through the documented endpoint
+  file: @file(./sample-resource.pdf)
+}

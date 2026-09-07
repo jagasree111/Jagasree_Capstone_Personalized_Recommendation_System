@@ -5,6 +5,9 @@ import Footer from "./components/Footer";
 import RecommendationCard from "./components/RecommendationCard";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import ResourceUpload from "./components/ResourceUpload";
+
+export const API_URL = "http://localhost:5000";
 
 function App() {
   const [recommendations, setRecommendations] = useState([]);
@@ -12,11 +15,26 @@ function App() {
 
   const fetchRecommendations = async () => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setRecommendations([]);
+        return;
+      }
+
       const response = await fetch(
-        "http://localhost:5000/recommendations"
+        `${API_URL}/recommendations`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch recommendations");
+      }
 
       setRecommendations(data);
     } catch (error) {
@@ -25,7 +43,11 @@ function App() {
   };
 
   useEffect(() => {
-    fetchRecommendations();
+    const loadRecommendations = async () => {
+      await fetchRecommendations();
+    };
+
+    loadRecommendations();
   }, []);
 
   return (
@@ -44,6 +66,8 @@ function App() {
             <p>
               Discover personalized recommendations tailored to your interests.
             </p>
+
+            {localStorage.getItem("token") && <ResourceUpload />}
 
             <div className="cards">
               {recommendations.map((recommendation) => (

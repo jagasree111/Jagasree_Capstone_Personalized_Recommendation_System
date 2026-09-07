@@ -33,7 +33,7 @@ function Register() {
       setName("");
       setEmail("");
       setPassword("");
-    } catch (error) {
+    } catch {
       setMessage("Registration failed. Please try again.");
     }
   };

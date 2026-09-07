@@ -111,6 +111,12 @@ Members of online communities receive the same recommendations regardless of the
 
 A web application that recommends personalized resources, discussions, and opportunities based on each user's interests, improving the overall experience within online communities.
 
+## API Documentation with Bruno
+
+The API endpoints are documented in the Bruno collection at [`docs/bruno/personalized-recommendation-api`](docs/bruno/personalized-recommendation-api). Open the collection in Bruno, select the `local` environment, and follow the run order in [`docs/bruno/README.md`](docs/bruno/README.md).
+
+The collection covers health, authentication, user CRUD, recommendation CRUD, and authenticated resource upload/delete endpoints.
+
 ---
 
 ## 👩‍💻 Author
