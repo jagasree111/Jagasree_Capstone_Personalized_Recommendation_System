@@ -10,4 +10,8 @@ services:
       - key: MONGO_URI
         sync: false
       - key: JWT_SECRET
+<<<<<<< HEAD
         sync: false
+=======
+        sync: false
+>>>>>>> origin/main
