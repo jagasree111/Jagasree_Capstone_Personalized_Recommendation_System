@@ -14,7 +14,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use("/uploads", express.static(uploadsDirectory));
 
 const User = require("./models/User");
 const Recommendation = require("./models/Recommendation");
@@ -54,6 +53,8 @@ const upload = multer({
     callback(new Error("Only PDF, DOC, DOCX, PNG, and JPG files are supported"));
   },
 });
+
+app.use("/uploads", express.static(uploadsDirectory));
 
 // MongoDB connection
 mongoose
