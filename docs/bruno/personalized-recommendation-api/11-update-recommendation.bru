@@ -1,0 +1,22 @@
+meta {
+  name: Update recommendation
+  type: http
+  seq: 11
+}
+
+put {
+  url: {{baseUrl}}/recommendations/{{recommendationId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "title": "Updated Machine Learning Resource",
+    "description": "Updated personalized recommendation"
+  }
+}

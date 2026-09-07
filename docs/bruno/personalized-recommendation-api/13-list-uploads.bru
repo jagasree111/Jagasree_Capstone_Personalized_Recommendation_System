@@ -1,0 +1,15 @@
+meta {
+  name: List uploaded resources
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/uploads
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -1,0 +1,11 @@
+meta {
+  name: Get user by ID
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/users/{{userId}}
+  body: none
+  auth: none
+}
