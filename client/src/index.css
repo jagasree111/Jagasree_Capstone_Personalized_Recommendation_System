@@ -1,4 +1,27 @@
 :root {
+  --ink: #292621;
+  --ink-soft: #655d54;
+  --muted: #938a80;
+  --coral: #d34a39;
+  --paper: #f2eadf;
+  --surface: #fffdf9;
+  --line: #ded4c8;
+  --display: Georgia, "Times New Roman", serif;
+  --body: "Trebuchet MS", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; min-width: 320px; }
+
+#root { min-height: 100vh; }
+:root {
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;

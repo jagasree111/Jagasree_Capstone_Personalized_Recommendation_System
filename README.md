@@ -1,5 +1,22 @@
 # Personalized Recommendation System
 
+## Live Submission
+
+- **Deployed frontend:** [Personalized Recommendation System](https://personalized-recommendation-client.onrender.com)
+- **Backend health check:** [API health](https://personalized-recommendation-api.onrender.com/health)
+- **GitHub pull request:** _Add the public PR URL after opening the pull request._
+- **Video explanation:** _Add the public video URL after uploading the explanation._
+
+The Render blueprint in [`render.yaml`](render.yaml) provisions both the Node/Express API and the Vite static frontend. The frontend uses `VITE_API_URL` so the same code works locally and in production.
+
+## Run Locally
+
+1. Start MongoDB locally.
+2. In `server`, create `.env` with `MONGO_URI` and `JWT_SECRET`, then run `npm install` and `npm start`.
+3. In `client`, run `npm install` and `npm run dev`.
+
+The local frontend uses `http://localhost:5000` by default. To point it at another API, create `client/.env` with `VITE_API_URL=https://your-api.example.com`.
+
 ## 📌 Project Overview
 
 Online communities often struggle to recommend relevant resources, discussions, events, and opportunities because user interests are not analyzed effectively. This project aims to build an AI-powered Personalized Recommendation System that understands user preferences and provides customized recommendations to improve user engagement and content discovery.
