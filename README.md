@@ -3,7 +3,7 @@
 ## Live Submission
 
 - **Deployed frontend:** [Personalized Recommendation System](https://personalized-recommendation-client.onrender.com)
-- **Backend health check:** [API health](https://personalized-recommendation-api.onrender.com/health)
+- **Backend health check:** [API health](https://jagasree-capstone-personalized.onrender.com/health)
 - **GitHub pull request:** _Add the public PR URL after opening the pull request._
 - **Video explanation:** _Add the public video URL after uploading the explanation._
 
