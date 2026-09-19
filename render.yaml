@@ -11,3 +11,5 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: CLIENT_URL
+        value: https://personalized-recommendation-client.onrender.com
