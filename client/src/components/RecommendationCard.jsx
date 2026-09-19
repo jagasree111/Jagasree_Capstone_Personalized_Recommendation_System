@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { API_URL } from "../App";
+import { createRecommendationUpdate, formatTags } from "../utils/recommendationUtils";
 
 function RecommendationCard({ recommendation, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -8,7 +9,7 @@ function RecommendationCard({ recommendation, onUpdate }) {
   const [description, setDescription] = useState(recommendation.description);
   const [category, setCategory] = useState(recommendation.category);
   const [tags, setTags] = useState(
-    (recommendation.tags || []).join(", ")
+    formatTags(recommendation.tags)
   );
 
   const handleUpdate = async () => {
@@ -21,15 +22,12 @@ function RecommendationCard({ recommendation, onUpdate }) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify({
+          body: JSON.stringify(createRecommendationUpdate({
             title,
             description,
             category,
-            tags: tags
-              .split(",")
-              .map((tag) => tag.trim())
-              .filter((tag) => tag !== ""),
-          }),
+            tags,
+          })),
         }
       );
 
