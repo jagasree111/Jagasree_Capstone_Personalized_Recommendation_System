@@ -6,8 +6,7 @@ import RecommendationCard from "./components/RecommendationCard";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import ResourceUpload from "./components/ResourceUpload";
-
-export const API_URL = "http://localhost:5000";
+import { API_URL } from "./api";
 
 function App() {
   const [recommendations, setRecommendations] = useState([]);
@@ -61,23 +60,49 @@ function App() {
 
         {page === "home" && (
           <>
-            <h1>Welcome to Personalized Recommendation System</h1>
+            <section className="hero-copy">
+              <p className="eyebrow">Personal discovery workspace</p>
+              <h1>Find resources that move your ideas forward.</h1>
+              <p className="hero-description">
+                Keep your community knowledge organized and surface recommendations
+                that match the way you learn.
+              </p>
+            </section>
 
-            <p>
-              Discover personalized recommendations tailored to your interests.
-            </p>
+            {localStorage.getItem("token") ? (
+              <ResourceUpload />
+            ) : (
+              <section className="welcome-panel">
+                <div>
+                  <p className="eyebrow">Start here</p>
+                  <h2>Your recommendations are waiting.</h2>
+                  <p>Sign in to view your feed, or create an account to share resources with your community.</p>
+                </div>
+                <div className="welcome-actions">
+                  <button className="primary-button" type="button" onClick={() => setPage("register")}>Create account</button>
+                  <button className="secondary-button" type="button" onClick={() => setPage("login")}>Sign in</button>
+                </div>
+              </section>
+            )}
 
-            {localStorage.getItem("token") && <ResourceUpload />}
-
-            <div className="cards">
-              {recommendations.map((recommendation) => (
-                <RecommendationCard
-                  key={recommendation._id}
-                  recommendation={recommendation}
-                  onUpdate={fetchRecommendations}
-                />
-              ))}
-            </div>
+            {localStorage.getItem("token") && (
+              <section className="recommendation-section">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">Curated for you</p>
+                    <h2>Latest recommendations</h2>
+                  </div>
+                  <span className="result-count">{recommendations.length} {recommendations.length === 1 ? "item" : "items"}</span>
+                </div>
+                <div className="cards">
+                  {recommendations.length === 0 ? (
+                    <p className="empty-state">Recommendations will appear here once your community adds them.</p>
+                  ) : recommendations.map((recommendation) => (
+                    <RecommendationCard key={recommendation._id} recommendation={recommendation} onUpdate={fetchRecommendations} />
+                  ))}
+                </div>
+              </section>
+            )}
           </>
         )}
       </main>

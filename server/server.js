@@ -12,7 +12,7 @@ const authenticateToken = require("./Middleware/authMiddleware");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL || true }));
 app.use(express.json());
 
 const User = require("./models/User");
