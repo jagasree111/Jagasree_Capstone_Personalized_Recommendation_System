@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -20,6 +21,8 @@ const Recommendation = require("./models/Recommendation");
 const UploadedResource = require("./models/UploadedResource");
 
 const JWT_SECRET = process.env.JWT_SECRET || "development-only-jwt-secret";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/personalized_recommendation_system";
 const uploadsDirectory = path.join(__dirname, "uploads");
 
@@ -162,6 +165,76 @@ app.post("/auth/login", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Login failed",
+      error: error.message
+    });
+  }
+});
+
+// Login with Google Identity Services
+app.post("/auth/google", async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!GOOGLE_CLIENT_ID || !googleClient) {
+      return res.status(503).json({
+        message: "Google login is not configured on the server"
+      });
+    }
+
+    if (!credential) {
+      return res.status(400).json({
+        message: "Google credential is required"
+      });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID
+    });
+    const payload = ticket.getPayload();
+
+    if (!payload?.sub || !payload.email || !payload.email_verified) {
+      return res.status(401).json({
+        message: "Unable to verify Google account"
+      });
+    }
+
+    let user = await User.findOne({ email: payload.email });
+
+    if (!user) {
+      const password = await bcrypt.hash(`google:${payload.sub}`, 10);
+      user = await User.create({
+        name: payload.name || payload.email.split("@")[0],
+        email: payload.email,
+        password,
+        googleId: payload.sub
+      });
+    } else if (!user.googleId) {
+      user.googleId = payload.sub;
+      await user.save();
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email
+      },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.status(200).json({
+      message: "Google login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    res.status(401).json({
+      message: "Google login failed",
       error: error.message
     });
   }

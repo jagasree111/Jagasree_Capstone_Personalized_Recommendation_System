@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { API_URL } from "../App";
+import { API_URL } from "../api";
 import { createRecommendationUpdate, formatTags } from "../utils/recommendationUtils";
 
 function RecommendationCard({ recommendation, onUpdate }) {
