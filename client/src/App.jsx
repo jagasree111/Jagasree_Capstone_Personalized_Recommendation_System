@@ -54,7 +54,7 @@ function App() {
       <Navbar setPage={setPage} />
 
       <main className="container">
-        {page === "login" && <Login />}
+        {page === "login" && <Login setPage={setPage} />}
 
         {page === "register" && <Register />}
 

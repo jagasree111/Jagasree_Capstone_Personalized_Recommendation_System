@@ -114,6 +114,7 @@ Members of online communities receive the same recommendations regardless of the
 ## 📂 Expected Features
 
 - User Registration & Login
+- Google Login
 - User Profile Management
 - Interest Selection
 - Personalized Recommendations
@@ -133,6 +134,10 @@ A web application that recommends personalized resources, discussions, and oppor
 The API endpoints are documented in the Bruno collection at [`docs/bruno/personalized-recommendation-api`](docs/bruno/personalized-recommendation-api). Open the collection in Bruno, select the `local` environment, and follow the run order in [`docs/bruno/README.md`](docs/bruno/README.md).
 
 The collection covers health, authentication, user CRUD, recommendation CRUD, and authenticated resource upload/delete endpoints.
+
+### Google Login setup
+
+Copy `server/.env.example` to `server/.env` and `client/.env.example` to `client/.env`. Set the same Google Web Client ID in `GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID`, then restart both applications. The frontend receives a Google Identity Services credential and sends it to `POST /auth/google`; the backend verifies it with Google, reuses or creates the matching user, and returns the same JWT format as email/password login.
 
 ---
 

@@ -231,6 +231,42 @@ form {
   gap: 14px;
 }
 
+.auth-divider {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 20px 0 14px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  background: var(--line);
+  content: "";
+  height: 1px;
+  width: 100%;
+}
+
+.google-button,
+.google-fallback-button {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+  width: 100%;
+}
+
+.google-fallback-button {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.google-fallback-button:hover {
+  background: #f7f3ed;
+  border-color: var(--ink-soft);
+}
+
 label {
   color: var(--ink-soft);
   display: grid;
