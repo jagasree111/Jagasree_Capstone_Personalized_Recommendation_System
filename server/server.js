@@ -23,6 +23,8 @@ const UploadedResource = require("./models/UploadedResource");
 const JWT_SECRET = process.env.JWT_SECRET || "development-only-jwt-secret";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/personalized_recommendation_system";
 const uploadsDirectory = path.join(__dirname, "uploads");
 
@@ -410,6 +412,75 @@ app.get("/recommendations", authenticateToken, async (req, res) => {
     res.json(recommendations);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/ai/recommend", authenticateToken, async (req, res) => {
+  const interest = typeof req.body.interest === "string" ? req.body.interest.trim() : "";
+
+  if (!interest) {
+    return res.status(400).json({ message: "An interest or topic is required" });
+  }
+
+  if (interest.length > 200) {
+    return res.status(400).json({ message: "Interest must be 200 characters or fewer" });
+  }
+
+  if (!OPENAI_API_KEY) {
+    return res.status(503).json({ message: "AI recommendations are not configured. Add OPENAI_API_KEY to server/.env." });
+  }
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: "You are a learning and resource recommendation assistant. Return a JSON object with a recommendations array of exactly 4 distinct, relevant items. Each item must have title, description, category, tags (an array of 2-4 short strings), and whyRecommended. Do not include markdown or unsupported URLs.",
+          },
+          { role: "user", content: `Recommend useful resources or activities for this interest: ${interest}` },
+        ],
+        max_tokens: 1200,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error("OpenAI recommendation request failed:", response.status, errorBody);
+      return res.status(502).json({ message: "The AI recommendation service could not complete the request. Please try again." });
+    }
+
+    const completion = await response.json();
+    const result = JSON.parse(completion.choices?.[0]?.message?.content || "{}");
+    const recommendations = Array.isArray(result.recommendations)
+      ? result.recommendations.slice(0, 4).filter((item) =>
+        item && typeof item.title === "string" && typeof item.description === "string" &&
+        typeof item.category === "string" && typeof item.whyRecommended === "string"
+      ).map((item) => ({
+        title: item.title,
+        description: item.description,
+        category: item.category,
+        tags: Array.isArray(item.tags) ? item.tags.filter((tag) => typeof tag === "string").slice(0, 4) : [],
+        whyRecommended: item.whyRecommended,
+      }))
+      : [];
+
+    if (!recommendations.length) {
+      return res.status(502).json({ message: "The AI service returned recommendations in an unexpected format. Please try again." });
+    }
+
+    res.json({ recommendations });
+  } catch (error) {
+    console.error("AI recommendation error:", error.message);
+    res.status(502).json({ message: "Unable to generate recommendations right now. Please try again." });
   }
 });
 

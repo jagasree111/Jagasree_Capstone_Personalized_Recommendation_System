@@ -123,6 +123,33 @@ h2 {
   margin-top: 52px;
 }
 
+.ai-recommendation-section {
+  margin-top: 52px;
+}
+
+.ai-recommendation-form {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 18px 0 22px;
+}
+
+.ai-recommendation-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.ai-recommendation-card .recommendation-reason {
+  border-left: 2px solid var(--coral);
+  margin-top: 14px;
+  padding-left: 11px;
+}
+
+.ai-recommendation-card .recommendation-reason strong {
+  color: var(--ink);
+}
+
 .welcome-panel {
   align-items: center;
   background: var(--ink);
@@ -364,6 +391,7 @@ footer {
   .welcome-actions { width: 100%; }
   .welcome-actions button { flex: 1; }
   .section-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .ai-recommendation-form { grid-template-columns: 1fr; }
 }
 .counter {
   font-size: 16px;
