@@ -6,6 +6,7 @@ import RecommendationCard from "./components/RecommendationCard";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import ResourceUpload from "./components/ResourceUpload";
+import AIRecommendations from "./components/AIRecommendations";
 import { API_URL } from "./api";
 
 function App() {
@@ -84,6 +85,8 @@ function App() {
                 </div>
               </section>
             )}
+
+            {localStorage.getItem("token") && <AIRecommendations />}
 
             {localStorage.getItem("token") && (
               <section className="recommendation-section">
