@@ -12,7 +12,7 @@ The Render blueprint in [`render.yaml`](render.yaml) provisions both the Node/Ex
 ## Run Locally
 
 1. Start MongoDB locally.
-2. In `server`, create `.env` with `MONGO_URI` and `JWT_SECRET`, then run `npm install` and `npm start`.
+2. In `server`, create `.env` with `MONGO_URI`, `JWT_SECRET`, and `OPENAI_API_KEY`, then run `npm install` and `npm start`. `OPENAI_MODEL` is optional and defaults to `gpt-4o-mini`.
 3. In `client`, run `npm install` and `npm run dev`.
 
 The local frontend uses `http://localhost:5000` by default. To point it at another API, create `client/.env` with `VITE_API_URL=https://your-api.example.com`.
@@ -134,6 +134,10 @@ A web application that recommends personalized resources, discussions, and oppor
 The API endpoints are documented in the Bruno collection at [`docs/bruno/personalized-recommendation-api`](docs/bruno/personalized-recommendation-api). Open the collection in Bruno, select the `local` environment, and follow the run order in [`docs/bruno/README.md`](docs/bruno/README.md).
 
 The collection covers health, authentication, user CRUD, recommendation CRUD, and authenticated resource upload/delete endpoints.
+
+### AI autocomplete configuration
+
+The interest field in the AI recommendations section uses the existing OpenAI integration to suggest related learning topics while you type. Suggestions are requested after a short pause and require a server-side `OPENAI_API_KEY`; the key must never be added to the frontend. Set `OPENAI_API_KEY` in `server/.env` for local development and in the backend service environment for deployment. `OPENAI_MODEL` optionally selects the model and defaults to `gpt-4o-mini`. Without the API key, the endpoint responds with a configuration error and the interface displays it to the user.
 
 ### Google Login setup
 
