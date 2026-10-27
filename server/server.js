@@ -484,6 +484,80 @@ app.post("/api/ai/recommend", authenticateToken, async (req, res) => {
   }
 });
 
+app.post("/api/ai/autocomplete", authenticateToken, async (req, res) => {
+  const query = typeof req.body?.query === "string" ? req.body.query.trim() : "";
+
+  if (query.length < 2) {
+    return res.status(400).json({ message: "Enter at least 2 characters to get suggestions" });
+  }
+
+  if (query.length > 200) {
+    return res.status(400).json({ message: "Autocomplete queries must be 200 characters or fewer" });
+  }
+
+  if (!OPENAI_API_KEY) {
+    return res.status(503).json({ message: "AI autocomplete is not configured. Add OPENAI_API_KEY to server/.env." });
+  }
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + OPENAI_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: "You help learners discover useful learning topics. Return a JSON object with a suggestions array of up to 5 concise topic or interest completions, each 2-80 characters. Suggestions must be relevant to the user's unfinished topic. Do not include explanations, markdown, or URLs.",
+          },
+          { role: "user", content: `Suggest learning topics that complete or refine this input: ${query}` },
+        ],
+        max_tokens: 250,
+        temperature: 0.5,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("OpenAI autocomplete request failed:", response.status);
+      return res.status(502).json({ message: "The AI suggestion service could not complete the request. Please try again." });
+    }
+
+    const completion = await response.json();
+    const result = JSON.parse(completion.choices?.[0]?.message?.content || "{}");
+
+    if (!Array.isArray(result.suggestions)) {
+      return res.status(502).json({ message: "The AI service returned suggestions in an unexpected format. Please try again." });
+    }
+
+    const suggestions = [];
+    const seenSuggestions = new Set();
+    for (const suggestion of result.suggestions) {
+      if (typeof suggestion !== "string") continue;
+
+      const trimmedSuggestion = suggestion.trim();
+      const normalizedSuggestion = trimmedSuggestion.toLowerCase();
+      if (
+        trimmedSuggestion.length < 2 ||
+        trimmedSuggestion.length > 80 ||
+        seenSuggestions.has(normalizedSuggestion)
+      ) continue;
+
+      seenSuggestions.add(normalizedSuggestion);
+      suggestions.push(trimmedSuggestion);
+      if (suggestions.length === 5) break;
+    }
+
+    res.json({ suggestions });
+  } catch (error) {
+    console.error("AI autocomplete error:", error.message);
+    res.status(502).json({ message: "Unable to load AI suggestions right now. Please try again." });
+  }
+});
+
 // Create a recommendation
 app.post("/recommendations", authenticateToken, async (req, res) => {
   try {
