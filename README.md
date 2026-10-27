@@ -1,267 +1,191 @@
 # Personalized Recommendation System
 
-## 1. Project Title
+A full-stack learning-resource application with account authentication, community recommendations, file uploads, and AI suggestions for a topic entered by the user.
 
-Personalized Recommendation System
+## Problem Statement
 
-## 2. Problem Statement
+Learners may have difficulty finding useful resources among generic recommendations. The project provides a place to share learning materials and explore suggestions relevant to a topic a learner chooses.
 
-Online communities often recommend the same type of content to every user, even when each learner has different goals, interests, and knowledge levels. This creates a poor discovery experience and reduces engagement. Students and community members need recommendations that are relevant to their interests and learning path.
+## Proposed Solution
 
-## 3. Proposed Solution
+The application combines a React web client with a Node.js and Express API, MongoDB persistence through Mongoose, JWT authentication, optional Google sign-in, and backend calls to OpenAI for topic autocomplete and recommendation suggestions.
 
-This project builds a full-stack recommendation platform that stores user interests, supports authentication, and suggests useful resources based on personal preferences. The system combines:
+The AI workflow uses the topic the signed-in user enters. Although the user schema has an `interests` field, there is no profile editor or automatic recommendation ranking based on stored interests or activity yet. AI-generated suggestions are returned to the frontend and are not saved as recommendation records.
 
-- a React frontend for the user experience,
-- a Node.js + Express API for business logic,
-- MongoDB for data storage,
-- JWT-based login for protected actions,
-- Google sign-in for convenience,
-- OpenAI-powered AI autocomplete and recommendation generation for topic discovery.
+## Technology Stack
 
-## 4. Technology Stack
+- **Frontend:** React, JavaScript, Vite
+- **Backend:** Node.js, Express
+- **Database:** MongoDB with Mongoose
+- **Authentication:** bcryptjs password hashing, JSON Web Tokens (JWT), and optional Google Identity Services
+- **AI:** OpenAI Chat Completions API, called from the backend
+- **File uploads:** Multer; files are stored under `server/uploads/`
+- **Deployment:** Render
+- **API request collection:** Bruno, under `docs/bruno/`
+- **Tests and quality checks:** Jest tests, ESLint, and Vite production build scripts in `client/package.json`
 
-- Frontend: React.js, Vite, JavaScript
-- Backend: Node.js, Express.js
-- Database: MongoDB Atlas / Mongoose
-- Authentication: JWT, Google Identity Services
-- AI Integration: OpenAI Chat Completions API
-- Deployment: Render
-- API Documentation: Bruno
-- Version Control: Git + GitHub
-
-## 5. Key Features
-
-- User registration and login using email/password
-- Google login support
-- User profile and interest support
-- Recommendation CRUD operations
-- AI-powered topic autocomplete while typing an interest
-- AI-generated recommendations based on user input
-- Secure file upload for learning resources (PDF/DOC/DOCX/PNG/JPG)
-- Protected API endpoints using JWT authorization
-- Responsive frontend for community use
-
-## 6. Project Architecture
-
-The project is divided into two main parts:
-
-- `client/` contains the React frontend application.
-- `server/` contains the Express API and MongoDB models.
-- `docs/bruno/` contains Bruno API request collections for local testing.
-- `render.yaml` configures the deployed services on Render.
-
-Project structure:
+## Architecture Overview
 
 ```text
-Jagasree_Capstone_Personalized_Recommendation_System/
-├── client/
-│   ├── src/
-│   ├── public/
-│   ├── package.json
-│   ├── .env.example
-│   └── vite.config.js
-├── server/
-│   ├── models/
-│   ├── Middleware/
-│   ├── uploads/
-│   ├── server.js
-│   ├── .env.example
-│   └── package.json
-├── docs/
-│   └── bruno/
-├── README.md
-├── render.yaml
-└── .gitignore
+Browser (React + Vite)
+    | HTTP requests; JWT in Authorization header for protected routes
+    v
+Express API (Node.js)
+    |-- Mongoose --------------------> MongoDB
+    |-- OpenAI API -----------------> AI topic suggestions
+    |-- Multer ---------------------> server/uploads/ + MongoDB metadata
+    +-- bcryptjs / JWT / Google ID token verification
 ```
 
-Main source files:
+The frontend reads its API base URL from `VITE_API_URL`. The backend exposes routes for authentication, user records, recommendations, uploads, AI suggestions, and a health response. MongoDB stores user, recommendation, and uploaded-resource metadata documents. The files themselves are stored on the backend filesystem.
 
-- `client/src/App.jsx` — main app shell and page flow
-- `client/src/components/AIRecommendations.jsx` — AI autocomplete and recommendation UI
-- `client/src/components/ResourceUpload.jsx` — resource upload and listing
-- `client/src/api.js` — frontend API configuration
-- `server/server.js` — Express routes, auth, uploads, MongoDB connection, and AI endpoints
-- `server/models/User.js` — user schema
-- `server/models/Recommendation.js` — recommendation schema
-- `server/models/UploadedResource.js` — uploaded file metadata schema
+The `/health` endpoint only reports that the API process responds; it is not a database or end-to-end health check.
 
-## 7. Live Deployment Links
+## Key Features
 
-- Frontend: https://jagasree-personalized-recommendation.onrender.com/
-- Backend: https://jagasree-capstone-personalized.onrender.com/
-- Backend health endpoint: https://jagasree-capstone-personalized.onrender.com/health
+- Email and password registration and login. Passwords are hashed with bcryptjs, and login returns a JWT.
+- Optional Google sign-in, when both client and server Google client IDs are configured.
+- Authenticated recommendation listing, creation, update, and deletion API routes. The frontend displays recommendations and supports editing and deleting them.
+- AI-generated topic autocomplete and recommendation suggestions for the topic submitted by the user. These routes require authentication and a backend OpenAI key.
+- Authenticated learning-resource upload, listing, and deletion. The API accepts PDF, DOC, DOCX, PNG, and JPEG MIME types and limits uploads to 5 MB.
+- User records can hold an interests array, but the frontend does not currently provide interest management or use the array to rank recommendations.
 
-The backend exposes a health check route at `/health`, and the project uses this route for deployment verification.
+## Installation Instructions
 
-## 8. Installation and Setup Instructions
-
-1. Clone the repository.
+Requirements: Node.js/npm and a MongoDB instance, either local or MongoDB Atlas.
 
 ```bash
 git clone https://github.com/jagasree111/Jagasree_Capstone_Personalized_Recommendation_System.git
 cd Jagasree_Capstone_Personalized_Recommendation_System
 ```
 
-2. Create environment files from the examples.
+Copy the placeholder environment templates, then edit the new files with your local settings:
 
 ```bash
 cp server/.env.example server/.env
 cp client/.env.example client/.env
 ```
 
-3. Configure values in both `.env` files. See the environment section below.
+In Windows PowerShell, use:
 
-4. Install dependencies for the server and client.
+```powershell
+Copy-Item server\.env.example server\.env
+Copy-Item client\.env.example client\.env
+```
+
+Install the frontend and backend dependencies:
 
 ```bash
 npm --prefix server install
 npm --prefix client install
 ```
 
-5. Start MongoDB locally or use your MongoDB Atlas connection string.
+## Environment Setup
 
-6. Start the backend:
+### `server/.env`
+
+The complete placeholder template is in [`server/.env.example`](server/.env.example).
+
+| Variable | Purpose |
+|---|---|
+| `MONGO_URI` | MongoDB connection string |
+| `JWT_SECRET` | Secret used to sign and verify JWTs; replace the example value with a long, unique value |
+| `CLIENT_URL` | Allowed frontend origin for CORS, for example `http://localhost:5173` |
+| `OPENAI_API_KEY` | Backend-only key required for AI autocomplete and recommendation requests |
+| `OPENAI_MODEL` | OpenAI model name; the example uses `gpt-4o-mini` |
+| `GOOGLE_CLIENT_ID` | Optional Google Web Client ID for server-side credential verification |
+| `PORT` | Optional server port; defaults to `5000` |
+
+The backend requires `JWT_SECRET` and exits with an explicit error if it is missing. Replace the example value before starting the server.
+
+### `client/.env`
+
+The complete placeholder template is in [`client/.env.example`](client/.env.example).
+
+| Variable | Purpose |
+|---|---|
+| `VITE_API_URL` | API origin; defaults in local development to `http://localhost:5000` |
+| `VITE_GOOGLE_CLIENT_ID` | Optional public Google Web Client ID used by Google Identity Services |
+
+Never put `OPENAI_API_KEY`, `JWT_SECRET`, or other private credentials in the client environment. Values with the `VITE_` prefix are included in browser bundles and are public. The [`client/.env.production`](client/.env.production) file sets the public deployed API origin; a Render build environment value can override it.
+
+## Running the Project
+
+Start the backend in one terminal:
 
 ```bash
 npm --prefix server start
 ```
 
-7. Start the frontend in another terminal:
+Start the frontend in a second terminal:
 
 ```bash
 npm --prefix client run dev
 ```
 
-The frontend runs on the Vite default port `5173`, and the backend runs on port `5000` unless overridden by `PORT`.
-
-## 9. Environment Variables
-
-### Server environment (`server/.env`)
-
-```env
-MONGO_URI=mongodb://127.0.0.1:27017/personalized_recommendation_system
-JWT_SECRET=replace-with-a-long-random-secret
-GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
-CLIENT_URL=http://localhost:5173
-OPENAI_API_KEY=your-openai-api-key
-OPENAI_MODEL=gpt-4o-mini
-```
-
-### Client environment (`client/.env`)
-
-```env
-VITE_API_URL=http://localhost:5000
-VITE_GOOGLE_CLIENT_ID=YOUR_GOOGLE_WEB_CLIENT_ID
-```
-
-Notes:
-
-- Do not commit real secrets or production credentials.
-- `OPENAI_API_KEY` is required for the AI autocomplete and recommendation features.
-- The frontend never stores the OpenAI key directly.
-- `VITE_GOOGLE_CLIENT_ID` must match the Google client ID configured in the backend.
-
-## 10. API Endpoints
-
-The main API routes in `server/server.js` are listed below.
-
-### Health and auth
-
-- `GET /health` — health check
-- `POST /auth/register` — register a new user
-- `POST /auth/login` — login with email/password
-- `POST /auth/google` — Google OAuth login
-
-### User routes
-
-- `GET /users` — list users
-- `GET /users/:id` — get user by ID
-- `POST /users` — create user
-- `PUT /users/:id` — update user
-
-### Resource upload routes
-
-- `GET /uploads` — list uploaded resources for the authenticated user
-- `POST /uploads` — upload a file
-- `DELETE /uploads/:id` — delete an uploaded resource
-
-### Recommendation routes
-
-- `GET /recommendations` — list recommendations
-- `POST /recommendations` — create a recommendation
-- `GET /recommendations/:id` — get recommendation by ID
-- `PUT /recommendations/:id` — update recommendation
-- `DELETE /recommendations/:id` — delete recommendation
-
-### AI endpoints
-
-- `POST /api/ai/recommend` — generate AI suggestions from a topic or interest
-- `POST /api/ai/autocomplete` — fetch topic suggestions while the user types
-
-All recommendation and AI endpoints require a valid JWT in the `Authorization` header.
-
-## 11. How to Run the Frontend and Backend
-
-### Backend
-
-```bash
-cd server
-npm install
-npm start
-```
-
-Expected result:
-
-- Server starts on `http://localhost:5000`
-- MongoDB connection is attempted using `MONGO_URI`
-- `/health` returns a JSON response like `{ "status": "ok" }`
-
-### Frontend
-
-```bash
-cd client
-npm install
-npm run dev
-```
-
-Expected result:
-
-- Vite starts the app on `http://localhost:5173`
-- The browser connects to the backend URL configured in `VITE_API_URL`
-
-## 12. Testing Instructions
-
-Project validation checks available in this repository:
-
-```bash
-npm --prefix client run test
-npm --prefix client run build
-```
-
-For backend server validation:
+The backend defaults to `http://localhost:5000`; Vite normally serves the frontend at `http://localhost:5173`. Check the health route with:
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-The repository also includes a Bruno collection for API testing in `docs/bruno/`.
+The response should be `{"status":"ok"}` when the API process is reachable. It does not confirm MongoDB connectivity.
 
-## 13. Screenshots
+The Bruno requests in [`docs/bruno/personalized-recommendation-api/`](docs/bruno/personalized-recommendation-api/) provide additional endpoint examples. Main routes include:
 
-No screenshots are stored in the repository at the moment. When preparing the final submission and defense, the deployed frontend can be used to capture screenshots and short demo evidence for the main workflows.
+| Method and path | Purpose |
+|---|---|
+| `GET /health` | API process health response |
+| `POST /auth/register` | Register with name, email, and password |
+| `POST /auth/login` | Sign in and receive a JWT |
+| `POST /auth/google` | Sign in using a verified Google credential |
+| `GET /users`, `GET /users/:id`, `POST /users`, `PUT /users/:id` | User record operations |
+| `GET /recommendations`, `POST /recommendations`, `GET /recommendations/:id`, `PUT /recommendations/:id`, `DELETE /recommendations/:id` | Recommendation operations |
+| `GET /uploads`, `POST /uploads`, `DELETE /uploads/:id` | Authenticated resource management |
+| `POST /api/ai/recommend`, `POST /api/ai/autocomplete` | Authenticated AI suggestion requests |
 
-## 14. Future Improvements
+Send a valid JWT in the `Authorization: Bearer <token>` header for recommendation, upload-management, and AI routes. The generic `/users` routes are currently not protected by authentication; do not expose them publicly with real user data. Recommendation routes also do not yet enforce record ownership.
 
-- Add profile editing with a dedicated interests dashboard
-- Add recommendation filtering by category and tags
-- Add more advanced recommendation logic based on user behavior and history
-- Improve analytics and admin reporting
-- Expand AI features with custom prompts and personalized ranking
-- Add stronger validation and rate limiting for production deployment
+## Deployment Links
 
-## Author
+- **Frontend:** [https://jagasree-personalized-recommendation.onrender.com](https://jagasree-personalized-recommendation.onrender.com/)
+- **Backend:** [https://jagasree-capstone-personalized.onrender.com](https://jagasree-capstone-personalized.onrender.com/)
+- **Backend health route:** [https://jagasree-capstone-personalized.onrender.com/health](https://jagasree-capstone-personalized.onrender.com/health)
 
-Jagasree S
+The Render backend blueprint is configured in [`render.yaml`](render.yaml). Production environment values, including MongoDB and JWT credentials and (if used) the OpenAI key, must be set in Render's environment settings rather than committed to the repository.
 
-B.Tech Artificial Intelligence & Machine Learning
+## Folder Structure
+
+```text
+client/
+  public/                 Static assets
+  src/
+    components/           Login, registration, upload, and recommendation UI
+    utils/                Recommendation formatting helpers and tests
+    App.jsx               Main page and recommendation feed
+    api.js                Frontend API base URL
+server/
+  Middleware/             JWT authentication middleware
+  models/                 User, recommendation, and upload metadata schemas
+  uploads/                Uploaded resource files
+  server.js               Express routes and service configuration
+docs/
+  bruno/                  Bruno API collection and local environment
+  final-submission/       Walkthrough, defense questions, and PR draft
+render.yaml               Render backend service configuration
+```
+
+Important source files include [`client/src/components/AIRecommendations.jsx`](client/src/components/AIRecommendations.jsx), [`client/src/components/ResourceUpload.jsx`](client/src/components/ResourceUpload.jsx), [`server/models/User.js`](server/models/User.js), [`server/models/Recommendation.js`](server/models/Recommendation.js), and [`server/models/UploadedResource.js`](server/models/UploadedResource.js).
+
+## Future Improvements
+
+- Add authenticated user-profile editing and interest management.
+- Rank recommendations using a user's stored interests and activity.
+- Save AI-generated recommendations when a user chooses to keep them.
+- Restrict user and recommendation operations to authorized owners or administrators; avoid exposing user documents through public routes.
+- Add backend tests, stronger request validation, and rate limiting.
+- Use persistent object storage for uploaded files in deployments where the server filesystem is ephemeral.
+
+## Contributors
+
+- Jagasree S

@@ -20,7 +20,10 @@ const User = require("./models/User");
 const Recommendation = require("./models/Recommendation");
 const UploadedResource = require("./models/UploadedResource");
 
-const JWT_SECRET = process.env.JWT_SECRET || "development-only-jwt-secret";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET must be configured in the server environment");
+}
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;

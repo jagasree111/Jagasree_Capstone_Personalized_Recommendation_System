@@ -16,4 +16,4 @@ services:
       - key: OPENAI_MODEL
         value: gpt-4o-mini
       - key: CLIENT_URL
-        value: https://personalized-recommendation-client.onrender.com
+        value: https://jagasree-personalized-recommendation.onrender.com
