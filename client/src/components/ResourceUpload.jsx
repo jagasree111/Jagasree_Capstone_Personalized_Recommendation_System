@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { API_URL } from "../api";
+import { API_URL, fetchWithBackendError } from "../api";
 
 const formatBytes = (bytes) => {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -14,11 +14,12 @@ function ResourceUpload() {
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState("");
 
   useEffect(() => {
     if (!localStorage.getItem("token")) return;
 
-    fetch(`${API_URL}/uploads`, {
+    fetchWithBackendError(`${API_URL}/uploads`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })
       .then(async (response) => {
@@ -35,6 +36,10 @@ function ResourceUpload() {
       setMessage("Choose a file before uploading.");
       return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage("This file is larger than 5 MB. Choose a smaller file.");
+      return;
+    }
 
     setIsUploading(true);
     setMessage("");
@@ -44,7 +49,7 @@ function ResourceUpload() {
     formData.append("file", file);
 
     try {
-      const response = await fetch(`${API_URL}/uploads`, {
+      const response = await fetchWithBackendError(`${API_URL}/uploads`, {
         method: "POST",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: formData,
@@ -66,21 +71,26 @@ function ResourceUpload() {
   };
 
   const handleDelete = async (resourceId) => {
+    setDeletingId(resourceId);
+    setMessage("");
     try {
-      const response = await fetch(`${API_URL}/uploads/${resourceId}`, {
+      const response = await fetchWithBackendError(`${API_URL}/uploads/${resourceId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Delete failed");
       setResources((current) => current.filter(({ _id }) => _id !== resourceId));
+      setMessage("Resource deleted.");
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setDeletingId("");
     }
   };
 
   return (
-    <section className="resource-panel">
+    <section className="resource-panel" id="library">
       <div className="section-heading">
         <div>
           <p className="eyebrow">Community library</p>
@@ -116,14 +126,16 @@ function ResourceUpload() {
         ) : resources.map((resource) => (
           <article className="resource-item" key={resource._id}>
             <div>
-              <p className="resource-type">{resource.mimeType.split("/").pop().toUpperCase()}</p>
+              <p className="resource-type">{resource.mimeType?.split("/").pop()?.toUpperCase() || "FILE"}</p>
               <h3>{resource.title}</h3>
               {resource.description && <p>{resource.description}</p>}
               <small>{resource.originalName} · {formatBytes(resource.size)}</small>
             </div>
             <div className="resource-actions">
               <a href={`${API_URL}${resource.url}`} target="_blank" rel="noreferrer">Open</a>
-              <button type="button" onClick={() => handleDelete(resource._id)} aria-label={`Delete ${resource.title}`}>Delete</button>
+              <button type="button" disabled={deletingId === resource._id} onClick={() => handleDelete(resource._id)} aria-label={`Delete ${resource.title}`}>
+                {deletingId === resource._id ? "Deleting..." : "Delete"}
+              </button>
             </div>
           </article>
         ))}

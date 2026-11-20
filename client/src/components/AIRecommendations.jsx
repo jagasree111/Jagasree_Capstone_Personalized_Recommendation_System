@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { API_URL } from "../api";
+import { API_URL, fetchWithBackendError } from "../api";
+import { getCourseSearchLinks } from "../utils/courseSearchLinks";
 
 function AIRecommendations() {
   const [interest, setInterest] = useState("");
@@ -11,6 +12,7 @@ function AIRecommendations() {
   const [error, setError] = useState("");
   const [suggestionError, setSuggestionError] = useState("");
   const skipAutocompleteRef = useRef(false);
+  const courseSearchLinks = getCourseSearchLinks(interest);
 
   useEffect(() => {
     if (skipAutocompleteRef.current) {
@@ -27,11 +29,11 @@ function AIRecommendations() {
       setSuggestionError("");
 
       try {
-        const response = await fetch(`${API_URL}/api/ai/autocomplete`, {
+        const response = await fetchWithBackendError(`${API_URL}/api/ai/autocomplete`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `******"token")}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({ query }),
           signal: controller.signal,
@@ -91,7 +93,7 @@ function AIRecommendations() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/ai/recommend`, {
+      const response = await fetchWithBackendError(`${API_URL}/api/ai/recommend`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -166,6 +168,28 @@ function AIRecommendations() {
           {isLoading ? "Generating..." : "Generate AI Recommendations"}
         </button>
       </form>
+
+      {courseSearchLinks.length > 0 && (
+        <section className="course-search" aria-labelledby="course-search-title">
+          <div>
+            <h3 id="course-search-title">Find courses outside the app</h3>
+            <p>Search for {interest.trim()} on trusted learning platforms.</p>
+          </div>
+          <div className="course-search-links">
+            {courseSearchLinks.map(({ name, url }) => (
+              <a
+                href={url}
+                key={name}
+                rel="noopener noreferrer"
+                target="_blank"
+                aria-label={`Search for ${interest.trim()} courses on ${name}`}
+              >
+                {name}
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {error && <p className="form-message" role="alert">{error}</p>}
       {isLoading && <p className="empty-state" role="status">Finding relevant ideas for your interest...</p>}

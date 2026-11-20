@@ -27,11 +27,11 @@ Email/password and Google login return a JWT that expires after one hour. Public
 | `GET` | `/users/:id` | No | Gets one user and populates recommendation refs |
 | `POST` | `/users` | No | Attempts to create a user record; currently fails because the handler omits the model's required `password` |
 | `PUT` | `/users/:id` | No | Updates user fields |
-| `GET` | `/recommendations` | Yes | Lists all recommendations and populates users |
-| `POST` | `/recommendations` | Yes | Creates a recommendation |
-| `GET` | `/recommendations/:id` | Yes | Gets one recommendation and populates its user |
-| `PUT` | `/recommendations/:id` | Yes | Updates a recommendation |
-| `DELETE` | `/recommendations/:id` | Yes | Deletes a recommendation |
+| `GET` | `/recommendations` | Yes | Lists community recommendations |
+| `POST` | `/recommendations` | Yes | Creates a recommendation for the authenticated user |
+| `GET` | `/recommendations/:id` | Yes | Gets one recommendation |
+| `PUT` | `/recommendations/:id` | Yes | Updates a recommendation owned by the authenticated user |
+| `DELETE` | `/recommendations/:id` | Yes | Deletes a recommendation owned by the authenticated user |
 | `GET` | `/uploads` | Yes | Lists only the authenticated user's resource metadata |
 | `POST` | `/uploads` | Yes | Uploads a file and saves metadata |
 | `DELETE` | `/uploads/:id` | Yes | Deletes a resource owned by the authenticated user |
@@ -53,7 +53,7 @@ Request JSON:
 }
 ```
 
-Requires all three fields. Returns `201` with a success message and user `id`, `name`, and `email`. Duplicate email returns `409`; missing fields return `400`.
+Requires all three fields and a password of at least eight characters. Returns `201` with a success message and user `id`, `name`, and `email`. Duplicate email returns `409`; missing fields or a short password return `400`.
 
 ### `POST /auth/login`
 
@@ -98,41 +98,38 @@ Request JSON accepts `name`, `email`, `interests`, and `recommendations`. `name`
 
 ## Recommendation Records
 
-All recommendation routes require a JWT. The record schema requires `title`, `description`, `category`, and `user`; `tags` is optional and defaults to an empty list.
+All recommendation routes require a JWT. Signed-in users can read the community feed; only the owner can edit or delete a record. The record schema requires `title`, `description`, `category`, and `user`; `tags` is optional and defaults to an empty list. The API assigns `user` from the JWT.
 
 ### `GET /recommendations`
 
-Returns all recommendation documents with their `user` reference populated.
+Returns all recommendation documents, newest first, with the owner's name populated.
 
 ### `POST /recommendations`
 
-Request JSON follows the model:
+Request JSON:
 
 ```json
 {
   "title": "Introduction to Machine Learning",
   "description": "A beginner-friendly learning resource",
   "category": "course",
-  "tags": ["machine learning", "beginner"],
-  "user": "<MongoDB user ObjectId>"
+  "tags": ["machine learning", "beginner"]
 }
 ```
 
-Returns `201` and the created record. The current handler accepts the body directly; it does not automatically assign the JWT user's ID.
+Returns `201` and the created record. The API sets the owner from the authenticated user's JWT; any `user` field supplied by the client is ignored.
 
 ### `GET /recommendations/:id`
 
-Returns one recommendation with its user populated, or `404` if no record exists.
+Returns one recommendation with its owner name populated, or `404` if the record does not exist.
 
 ### `PUT /recommendations/:id`
 
-Accepts updated recommendation fields as JSON and returns the updated record, or `404` if it does not exist.
+Accepts `title`, `description`, `category`, and optional `tags` as JSON and returns the updated record. Returns `404` if it does not exist or belongs to another user.
 
 ### `DELETE /recommendations/:id`
 
-Deletes by record ID and returns a success message, or `404` if not found.
-
-**Authorization limitation:** These routes verify that a caller has a valid JWT, but update, delete, detail, and list operations are not restricted by record ownership. The UI's edit/delete controls therefore should not be interpreted as owner-only access.
+Deletes a record owned by the authenticated user and returns a success message. Returns `404` if it does not exist or belongs to another user.
 
 ## Uploaded Resources
 
@@ -201,7 +198,7 @@ The interest must contain 1 to 200 characters. Returns an object with a `recomme
 ## Error and Operational Notes
 
 - Invalid or missing JWTs are rejected by authentication middleware.
-- AI provider or response errors are surfaced as `502`; missing AI configuration is `503`.
+- AI provider or response errors are surfaced as `502`; missing AI configuration is `503`. Provider HTTP errors include actionable messages for invalid keys (`401`), account/model access (`403`), quota or rate limits (`429`), and invalid model/request settings (`400`). The backend logs provider response details; never share API keys in logs or screenshots.
 - The `/health` endpoint does not test MongoDB connectivity or external providers.
 - Generic user routes are public, and recommendation record access is not owner-scoped in the current implementation.
 - Production environment values are managed outside the checked-in source; their presence cannot be verified from this repository.

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Personalized Recommendation System is a full-stack learning-resource application. Signed-in users can manage uploaded learning resources, browse and manage recommendation records, and request AI-generated suggestions for a topic they choose. The client is built with React and Vite; the API uses Node.js, Express, and MongoDB through Mongoose.
+Gather is a full-stack learning-resource application. Signed-in users can manage their uploaded learning resources, share recommendations with the community, manage their own recommendations, and request AI-generated suggestions for a topic they choose. The responsive client is built with React and Vite; the API uses Node.js, Express, and MongoDB through Mongoose.
 
 The current AI workflow uses the topic entered in the form. It does not rank results using saved user interests or activity. AI-generated suggestions are shown in the current client session and are not saved as recommendation records.
 
@@ -32,7 +32,7 @@ The application combines authenticated accounts, a personal resource-upload area
 
 - Register and log in using email and password.
 - Optional Google sign-in when both client and server Google client IDs are configured.
-- Store and retrieve recommendation records; signed-in users can edit and delete records in the feed.
+- Share recommendations with signed-in users; edit and delete only your own records.
 - Request up to four AI-generated recommendations for a topic.
 - Get AI topic autocomplete suggestions while entering a topic.
 - Upload, list, open, and delete resources associated with the signed-in user. Supported uploads are PDF, DOC, DOCX, PNG, and JPEG, with a 5 MB size limit.
@@ -61,10 +61,10 @@ The health endpoint responds with `{"status":"ok"}` without checking the databas
 1. A user registers with a name, email, and password. The API hashes the password before storing the user.
 2. The user logs in; the API returns a one-hour JWT. The browser stores the token in local storage and sends it as a bearer token on protected API requests.
 3. Signed-in users can upload a resource. The API stores the file on disk and saves its metadata with a reference to the user in MongoDB.
-4. The client loads the authenticated recommendation feed. It can display recommendation records and provide edit/delete actions.
+4. The client loads the authenticated community recommendation feed. Users can create recommendations and edit or delete only their own records.
 5. To request AI suggestions, a user enters a topic. The client can request autocomplete and submit the topic to the API; the API calls OpenAI and returns suggestions to the client. These AI results are not persisted.
 
-The upload list is scoped to the signed-in user; it is not a shared public resource feed. The recommendation API's list operation returns recommendation records across users, and recommendation updates/deletes are not restricted to the record owner.
+Uploads are scoped to the signed-in user. Recommendations are visible in the feed to signed-in users, while edits and deletes are restricted to each recommendation's owner.
 
 ## Database Structure
 
@@ -92,11 +92,11 @@ The API is served from the backend origin. Protected endpoints require `Authoriz
 | `GET` | `/users/:id` | Public in current implementation | Get a user and populated recommendations |
 | `POST` | `/users` | Public in current implementation | Attempts to create a user; currently fails model validation because the handler omits the required password |
 | `PUT` | `/users/:id` | Public in current implementation | Update a user record |
-| `GET` | `/recommendations` | JWT required | List recommendation records and populate their user |
-| `POST` | `/recommendations` | JWT required | Create a recommendation record |
-| `GET` | `/recommendations/:id` | JWT required | Get one recommendation and populate its user |
-| `PUT` | `/recommendations/:id` | JWT required | Update a recommendation |
-| `DELETE` | `/recommendations/:id` | JWT required | Delete a recommendation |
+| `GET` | `/recommendations` | JWT required | List recommendation records shared with signed-in users |
+| `POST` | `/recommendations` | JWT required | Create a recommendation owned by the signed-in user |
+| `GET` | `/recommendations/:id` | JWT required | Get a recommendation visible to signed-in users |
+| `PUT` | `/recommendations/:id` | JWT required | Update an owned recommendation |
+| `DELETE` | `/recommendations/:id` | JWT required | Delete an owned recommendation |
 | `GET` | `/uploads` | JWT required | List the signed-in user's uploaded resources |
 | `POST` | `/uploads` | JWT required | Upload a resource using multipart form data |
 | `DELETE` | `/uploads/:id` | JWT required | Delete one of the signed-in user's resources |
@@ -104,7 +104,7 @@ The API is served from the backend origin. Protected endpoints require `Authoriz
 | `POST` | `/api/ai/recommend` | JWT required; OpenAI key required | Return topic-based AI recommendations |
 | `GET` | `/uploads/:storedName` | Public static-file serving | Serve a file from the uploads directory |
 
-The generic `/users` routes are not protected and can expose user documents; recommendation mutations also lack owner checks. These are current implementation limitations, not recommended production access controls. Full request details and response behavior are in [API Documentation](docs/API_DOCUMENTATION.md).
+The generic `/users` routes are not protected and can expose user documents; avoid exposing them with real user data. Recommendation mutations enforce ownership. Full request details and response behavior are in [API Documentation](docs/API_DOCUMENTATION.md).
 
 ## Live Deployment Links
 

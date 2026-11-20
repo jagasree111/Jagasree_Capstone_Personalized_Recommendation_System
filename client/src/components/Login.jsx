@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { API_URL } from "../api";
+import { API_URL, authRequest } from "../api";
 
-function Login({ setPage }) {
+function Login({ setPage, onAuthenticated }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const googleButtonRef = useRef(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const hasGoogleClientId = Boolean(
@@ -32,6 +33,7 @@ function Login({ setPage }) {
 
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
+        onAuthenticated();
         setMessage("Login successful!");
         setPage("home");
       } catch {
@@ -73,46 +75,38 @@ function Login({ setPage }) {
     return () => {
       script.removeEventListener("load", renderGoogleButton);
     };
-  }, [googleClientId, hasGoogleClientId, setPage]);
+  }, [googleClientId, hasGoogleClientId, onAuthenticated, setPage]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setMessage("");
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage(data.message);
-        return;
-      }
+      const data = await authRequest("/auth/login", { email, password });
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      onAuthenticated();
 
       setMessage("Login successful!");
       setPage("home");
-    } catch {
-      setMessage("Login failed. Please try again.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="auth-panel">
-      <h2>Login</h2>
+      <p className="eyebrow">Good to have you back</p>
+      <h2>Sign in to Gather</h2>
+      <p className="auth-intro">Pick up where you left off and keep your learning ideas close.</p>
 
       <form onSubmit={handleLogin}>
         <input
+          aria-label="Email"
           type="email"
           placeholder="Email"
           value={email}
@@ -121,6 +115,7 @@ function Login({ setPage }) {
         />
 
         <input
+          aria-label="Password"
           type="password"
           placeholder="Password"
           value={password}
@@ -128,7 +123,9 @@ function Login({ setPage }) {
           required
         />
 
-        <button type="submit">Login</button>
+        <button className="primary-button" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Logging in..." : "Login"}
+        </button>
       </form>
 
       <div className="auth-divider"><span>or</span></div>
@@ -145,7 +142,10 @@ function Login({ setPage }) {
         </button>
       )}
 
-      {message && <p>{message}</p>}
+      {message && <p role="status">{message}</p>}
+      <p className="auth-switch">
+        New here? <button onClick={() => setPage("register")} type="button">Create an account</button>
+      </p>
     </div>
   );
 }

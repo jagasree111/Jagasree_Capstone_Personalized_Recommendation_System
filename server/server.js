@@ -7,6 +7,7 @@ const { OAuth2Client } = require("google-auth-library");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { MongoMemoryServer } = require("mongodb-memory-server");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 const authenticateToken = require("./Middleware/authMiddleware");
@@ -30,6 +31,59 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/personalized_recommendation_system";
 const uploadsDirectory = path.join(__dirname, "uploads");
+
+function createLocalRecommendations(interest) {
+  const topic = interest.replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return [
+    {
+      title: `${topic} Fundamentals`,
+      description: `Build a solid foundation in ${topic} through structured lessons and beginner-friendly exercises.`,
+      category: "Beginner learning",
+      tags: [topic, "fundamentals", "course"],
+      whyRecommended: "A strong foundation makes it easier to progress to practical projects.",
+    },
+    {
+      title: `Hands-on ${topic} Project`,
+      description: `Create a small project that applies ${topic} concepts to a real-world problem.`,
+      category: "Practice",
+      tags: [topic, "project", "hands-on"],
+      whyRecommended: "Projects reinforce learning and produce something useful to share.",
+    },
+    {
+      title: `${topic} Documentation and References`,
+      description: `Explore trusted documentation, guides, and reference materials for ${topic}.`,
+      category: "Reference",
+      tags: [topic, "documentation", "guides"],
+      whyRecommended: "Reliable references help you understand details and troubleshoot effectively.",
+    },
+    {
+      title: `${topic} Community Learning`,
+      description: `Follow ${topic} communities, discussions, tutorials, and examples from other learners.`,
+      category: "Community",
+      tags: [topic, "community", "examples"],
+      whyRecommended: "Community learning exposes you to varied approaches and useful feedback.",
+    },
+  ];
+}
+
+function getOpenAIErrorMessage(status) {
+  if (status === 400) {
+    return "The AI provider rejected the request. Check OPENAI_MODEL in server/.env and restart the backend.";
+  }
+  if (status === 401) {
+    return "The AI provider rejected the configured API key. Check OPENAI_API_KEY in server/.env and restart the backend.";
+  }
+  if (status === 403) {
+    return "The AI provider denied access to the configured model or account. Check your API project permissions.";
+  }
+  if (status === 429) {
+    return "The AI provider rate limit or usage quota was reached. Check your API project limits and billing, then retry.";
+  }
+  if (status >= 500) {
+    return "The AI provider is temporarily unavailable. Please try again later.";
+  }
+  return "The AI provider could not complete the request. Check the backend logs and try again.";
+}
 
 fs.mkdirSync(uploadsDirectory, { recursive: true });
 
@@ -64,11 +118,23 @@ const upload = multer({
 
 app.use("/uploads", express.static(uploadsDirectory));
 
-// MongoDB connection
-mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch((error) => console.log("MongoDB connection error:", error));
+let memoryMongoServer = null;
+
+async function connectDatabase() {
+  try {
+    await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 });
+    console.log("MongoDB connected successfully");
+  } catch (error) {
+    console.log("MongoDB Atlas connection error:", error.message);
+    console.log("Starting a local fallback database...");
+
+    memoryMongoServer = await MongoMemoryServer.create();
+    await mongoose.connect(memoryMongoServer.getUri(), {
+      dbName: "personalized_recommendation_system",
+    });
+    console.log("Local fallback MongoDB connected successfully");
+  }
+}
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
@@ -82,6 +148,12 @@ app.post("/auth/register", async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({
         message: "Name, email and password are required"
+      });
+    }
+
+    if (typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters long"
       });
     }
 
@@ -106,7 +178,9 @@ app.post("/auth/register", async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        interests: user.interests,
+        bio: user.bio
       }
     });
   } catch (error) {
@@ -164,7 +238,9 @@ app.post("/auth/login", async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        interests: user.interests,
+        bio: user.bio
       }
     });
   } catch (error) {
@@ -234,7 +310,9 @@ app.post("/auth/google", async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        interests: user.interests,
+        bio: user.bio
       }
     });
   } catch (error) {
@@ -242,6 +320,67 @@ app.post("/auth/google", async (req, res) => {
       message: "Google login failed",
       error: error.message
     });
+  }
+});
+
+app.get("/auth/profile", authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User profile not found" });
+    }
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      interests: user.interests,
+      bio: user.bio,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to load profile", error: error.message });
+  }
+});
+
+app.put("/auth/profile", authenticateToken, async (req, res) => {
+  try {
+    const { name, interests, bio } = req.body;
+    if (typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+    if (typeof bio === "string" && bio.length > 500) {
+      return res.status(400).json({ message: "Bio must be 500 characters or fewer" });
+    }
+
+    const normalizedInterests = Array.isArray(interests)
+      ? [...new Set(interests
+        .filter((interest) => typeof interest === "string")
+        .map((interest) => interest.trim())
+        .filter(Boolean))]
+        .slice(0, 20)
+      : [];
+
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { name: name.trim(), interests: normalizedInterests, bio: typeof bio === "string" ? bio.trim() : "" },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User profile not found" });
+    }
+
+    res.json({
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        interests: user.interests,
+        bio: user.bio,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ message: "Failed to update profile", error: error.message });
   }
 });
 
@@ -411,7 +550,8 @@ app.delete("/uploads/:id", authenticateToken, async (req, res) => {
 app.get("/recommendations", authenticateToken, async (req, res) => {
   try {
     const recommendations = await Recommendation.find()
-  .populate("user");
+      .populate("user", "name")
+      .sort({ _id: -1 });
     res.json(recommendations);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -430,7 +570,7 @@ app.post("/api/ai/recommend", authenticateToken, async (req, res) => {
   }
 
   if (!OPENAI_API_KEY) {
-    return res.status(503).json({ message: "AI recommendations are not configured. Add OPENAI_API_KEY to server/.env." });
+    return res.json({ recommendations: createLocalRecommendations(interest), provider: "local" });
   }
 
   try {
@@ -458,7 +598,7 @@ app.post("/api/ai/recommend", authenticateToken, async (req, res) => {
     if (!response.ok) {
       const errorBody = await response.text();
       console.error("OpenAI recommendation request failed:", response.status, errorBody);
-      return res.status(502).json({ message: "The AI recommendation service could not complete the request. Please try again." });
+      return res.status(502).json({ message: getOpenAIErrorMessage(response.status) });
     }
 
     const completion = await response.json();
@@ -499,7 +639,16 @@ app.post("/api/ai/autocomplete", authenticateToken, async (req, res) => {
   }
 
   if (!OPENAI_API_KEY) {
-    return res.status(503).json({ message: "AI autocomplete is not configured. Add OPENAI_API_KEY to server/.env." });
+    const topic = query.charAt(0).toUpperCase() + query.slice(1);
+    return res.json({
+      suggestions: [
+        `${topic} fundamentals`,
+        `${topic} for beginners`,
+        `${topic} projects`,
+        `Advanced ${topic}`,
+        `${topic} career guide`,
+      ],
+    });
   }
 
   try {
@@ -525,8 +674,9 @@ app.post("/api/ai/autocomplete", authenticateToken, async (req, res) => {
     });
 
     if (!response.ok) {
-      console.error("OpenAI autocomplete request failed:", response.status);
-      return res.status(502).json({ message: "The AI suggestion service could not complete the request. Please try again." });
+      const errorBody = await response.text();
+      console.error("OpenAI autocomplete request failed:", response.status, errorBody);
+      return res.status(502).json({ message: getOpenAIErrorMessage(response.status) });
     }
 
     const completion = await response.json();
@@ -564,7 +714,14 @@ app.post("/api/ai/autocomplete", authenticateToken, async (req, res) => {
 // Create a recommendation
 app.post("/recommendations", authenticateToken, async (req, res) => {
   try {
-    const recommendation = await Recommendation.create(req.body);
+    const { title, description, category, tags } = req.body;
+    const recommendation = await Recommendation.create({
+      title,
+      description,
+      category,
+      tags,
+      user: req.user.userId,
+    });
 
     res.status(201).json({
       message: "Recommendation created successfully",
@@ -582,7 +739,7 @@ app.post("/recommendations", authenticateToken, async (req, res) => {
 app.get("/recommendations/:id", authenticateToken, async (req, res) => {
   try {
     const recommendation = await Recommendation.findById(req.params.id)
-  .populate("user");
+      .populate("user", "name");
 
     if (!recommendation) {
       return res.status(404).json({
@@ -598,9 +755,10 @@ app.get("/recommendations/:id", authenticateToken, async (req, res) => {
 
 app.delete("/recommendations/:id", authenticateToken, async (req, res) => {
   try {
-    const recommendation = await Recommendation.findByIdAndDelete(
-      req.params.id
-    );
+    const recommendation = await Recommendation.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user.userId,
+    });
 
     if (!recommendation) {
       return res.status(404).json({
@@ -622,9 +780,10 @@ app.delete("/recommendations/:id", authenticateToken, async (req, res) => {
 // Update a recommendation
 app.put("/recommendations/:id", authenticateToken, async (req, res) => {
   try {
-    const recommendation = await Recommendation.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+    const { title, description, category, tags } = req.body;
+    const recommendation = await Recommendation.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.userId },
+      { title, description, category, tags },
       {
         new: true,
         runValidators: true
@@ -652,6 +811,8 @@ app.put("/recommendations/:id", authenticateToken, async (req, res) => {
 // Start server
 const port = process.env.PORT || 5000;
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Server running on port ${port}`);
+connectDatabase().finally(() => {
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`Server running on port ${port}`);
+  });
 });
